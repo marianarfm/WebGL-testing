@@ -15,24 +15,98 @@ window.onload = function init() {
 }
 
 function drawPoints() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-}
-
-function drawLines() {
-
-}
-
-function drawPolygons() {
-    var vertices = [vec2(-0.5, -0.5), vec2(0, 0.5), vec2(0.5, -0.5)];
-    var colors = [vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)];
+    var vertices = [];
 
     // Load shaders and initialize attribute buffers
-    var program = initShaders(gl, "vertex-shader", "fragment-shader");
+    var program = initShaders(gl, "Shaders/points.vert", "Shaders/points.frag");
     gl.useProgram(program);
     
     // Load the data into the GPU
     var bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId );
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+
+    // Associate our shader variables with our data buffer
+    var vPosition = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+    
+    function convertToWebGLCoords(x, y, canvas) {
+        var rect = canvas.getBoundingClientRect();
+        var glX = (x - rect.left) / canvas.width * 2 - 1;
+        var glY = (canvas.height - (y - rect.top)) / canvas.height * 2 - 1;
+        return vec2(glX, glY);
+    }
+
+    canvas.addEventListener('click', function(event) {
+        var point = convertToWebGLCoords(event.clientX, event.clientY, canvas);
+        vertices.push(point);
+    
+        // Update the buffer with the new points
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+    
+        // Redraw the scene with the new points
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.drawArrays(gl.POINTS, 0, vertices.length);
+    });
+}
+
+function drawLines() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var vertices = [];
+
+    // Load shaders and initialize attribute buffers
+    var program = initShaders(gl, "Shaders/lines.vert", "Shaders/lines.frag");
+    gl.useProgram(program);
+    
+    // Load the data into the GPU
+    var bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+
+    // Associate our shader variables with our data buffer
+    var vPosition = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vPosition);
+    
+    function convertToWebGLCoords(x, y, canvas) {
+        var rect = canvas.getBoundingClientRect();
+        var glX = (x - rect.left) / canvas.width * 2 - 1;
+        var glY = (canvas.height - (y - rect.top)) / canvas.height * 2 - 1;
+        return vec2(glX, glY);
+    }
+
+    canvas.addEventListener('click', function(event) {
+        var point = convertToWebGLCoords(event.clientX, event.clientY, canvas);
+        vertices.push(point);
+    
+        // Update the buffer with the new points
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+    
+        // Redraw the scene with the new points
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.drawArrays(gl.LINES, 0, vertices.length);
+    });
+}
+
+function drawPolygons() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var vertices = [vec2(-0.5, -0.5), vec2(0, 0.5), vec2(0.5, -0.5)];
+    var colors = [vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)];
+
+    // Load shaders and initialize attribute buffers
+    var program = initShaders(gl, "Shaders/polygons.vert", "Shaders/polygons.frag");
+    gl.useProgram(program);
+    
+    // Load the data into the GPU
+    var bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
 
     // Associate our shader variables with our data buffer
