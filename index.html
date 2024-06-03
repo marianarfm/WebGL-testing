@@ -4,11 +4,12 @@
   </head>
   <body>
     <h1>WebGL-testing</h1>
-    <canvas id="gl-canvas" width="450px" height="450px">Your browser does not support the HTML5 canvas element</canvas>
+    <canvas id="gl-canvas2D" width="450px" height="450px">Your browser does not support the HTML5 canvas element</canvas>
+    <canvas id="gl-canvas3D" width="450px" height="450px">Your browser does not support the HTML5 canvas element</canvas>
     <p>Click on what you would like to draw on the canvas. Demo is above this text</p>
     <button id="points-button" onclick="drawPoints(); document.getElementById('show-currently-selected').innerHTML = '<p>Drawing points</p>'">Points</button>
     <button id="lines-button" onclick="drawLines(); document.getElementById('show-currently-selected').innerHTML = '<p>Drawing lines</p>'">Lines</button>
-    <button id="polygons-button" onclick="drawPolygons(); document.getElementById('show-currently-selected').innerHTML = '<p>Drawing polygons</p>'">Polygons</button>
+    <button id="polygons-button" onclick="drawPolygons(); this.disabled = true; document.getElementById('show-currently-selected').innerHTML = '<p>Drawing polygons</p>'">Polygons</button>
     <div id="show-currently-selected"></div>
 
     <!-- Scripts -->
