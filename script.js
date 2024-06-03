@@ -1,128 +1,225 @@
-var canvas;
-var gl;
+var canvas2D;
+var canvas3D;
+var gl2D;
+var gl3D;
+
+// For the 3D canvas
+var program;
+var theta = 0;
+var thetaLoc;
+var xAxis = 0;
+var yAxis = 1;
+var zAxis = 2;
+var axis = 0;
+var theta = [0, 0, 0];
+var vs_vertices = []
+var vs_colors = []
+var dragging = false;
+var lastX = -1
+var lastY = -1;
 
 window.onload = function init() {
-    canvas = document.getElementById("gl-canvas");
-    gl = WebGLUtils.setupWebGL(canvas);
-    if (!gl) alert("WebGL is not available");
+    canvas2D = document.getElementById("gl-canvas2D");
+    canvas3D = document.getElementById("gl-canvas3D");
+    gl2D = WebGLUtils.setupWebGL(canvas2D);
+    gl3D = WebGLUtils.setupWebGL(canvas3D);
+    if (!gl2D || !gl3D) alert("WebGL is not available");
 
-    /* Initial canvas setup. (1) What part of the ouput canvas should be used for drawing;
-       (2) setting a background color to be cleared to; (3) clearing color and depth
-       buffers for consistent rendering (this way every frame starts as a blank slate). */
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.8, 0.8, 0.8, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Initial 2D canvas setup
+    gl2D.viewport(0, 0, canvas2D.width, canvas2D.height);
+    gl2D.clearColor(0.8, 0.8, 0.8, 1.0);
+    gl2D.clear(gl3D.COLOR_BUFFER_BIT | gl2D.DEPTH_BUFFER_BIT);
+
+    // Initial 3D canvas setup
+    gl3D.viewport(0, 0, canvas3D.width, canvas3D.height);
+    gl3D.clearColor(0.8, 0.8, 0.8, 1.0);
+    gl3D.enable(gl3D.DEPTH_TEST);
+    gl3D.clear(gl3D.COLOR_BUFFER_BIT | gl3D.DEPTH_BUFFER_BIT);
 }
 
 function drawPoints() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl2D.clear(gl2D.COLOR_BUFFER_BIT | gl2D.DEPTH_BUFFER_BIT);
 
     var vertices = [];
 
     // Load shaders and initialize attribute buffers
-    var program = initShaders(gl, "Shaders/points.vert", "Shaders/points.frag");
-    gl.useProgram(program);
+    var program = initShaders(gl2D, "Shaders/points.vert", "Shaders/points.frag");
+    gl2D.useProgram(program);
     
     // Load the data into the GPU
-    var bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+    var bufferId = gl2D.createBuffer();
+    gl2D.bindBuffer(gl2D.ARRAY_BUFFER, bufferId);
+    gl2D.bufferData(gl2D.ARRAY_BUFFER, flatten(vertices), gl2D.STATIC_DRAW);
 
     // Associate our shader variables with our data buffer
-    var vPosition = gl.getAttribLocation(program, "vPosition");
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-    
-    function convertToWebGLCoords(x, y, canvas) {
-        var rect = canvas.getBoundingClientRect();
-        var glX = (x - rect.left) / canvas.width * 2 - 1;
-        var glY = (canvas.height - (y - rect.top)) / canvas.height * 2 - 1;
-        return vec2(glX, glY);
-    }
+    var vPosition = gl2D.getAttribLocation(program, "vPosition");
+    gl2D.vertexAttribPointer(vPosition, 2, gl2D.FLOAT, false, 0, 0);
+    gl2D.enableVertexAttribArray(vPosition);
 
-    canvas.addEventListener('click', function(event) {
-        var point = convertToWebGLCoords(event.clientX, event.clientY, canvas);
+    canvas2D.addEventListener("click", function(event) {
+        var point = posMouse_to_posCanvas(event.clientX, event.clientY, canvas2D);
         vertices.push(point);
     
         // Update the buffer with the new points
-        gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+        gl2D.bindBuffer(gl2D.ARRAY_BUFFER, bufferId);
+        gl2D.bufferData(gl2D.ARRAY_BUFFER, flatten(vertices), gl2D.STATIC_DRAW);
     
         // Redraw the scene with the new points
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.drawArrays(gl.POINTS, 0, vertices.length);
+        gl2D.clear(gl2D.COLOR_BUFFER_BIT | gl2D.DEPTH_BUFFER_BIT);
+        gl2D.drawArrays(gl2D.POINTS, 0, vertices.length);
     });
 }
 
 function drawLines() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl2D.clear(gl2D.COLOR_BUFFER_BIT | gl2D.DEPTH_BUFFER_BIT);
 
     var vertices = [];
 
     // Load shaders and initialize attribute buffers
-    var program = initShaders(gl, "Shaders/lines.vert", "Shaders/lines.frag");
-    gl.useProgram(program);
+    var program = initShaders(gl2D, "Shaders/lines.vert", "Shaders/lines.frag");
+    gl2D.useProgram(program);
     
     // Load the data into the GPU
-    var bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+    var bufferId = gl2D.createBuffer();
+    gl2D.bindBuffer(gl2D.ARRAY_BUFFER, bufferId);
+    gl2D.bufferData(gl2D.ARRAY_BUFFER, flatten(vertices), gl2D.STATIC_DRAW);
 
     // Associate our shader variables with our data buffer
-    var vPosition = gl.getAttribLocation(program, "vPosition");
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-    
-    function convertToWebGLCoords(x, y, canvas) {
-        var rect = canvas.getBoundingClientRect();
-        var glX = (x - rect.left) / canvas.width * 2 - 1;
-        var glY = (canvas.height - (y - rect.top)) / canvas.height * 2 - 1;
-        return vec2(glX, glY);
-    }
+    var vPosition = gl2D.getAttribLocation(program, "vPosition");
+    gl2D.vertexAttribPointer(vPosition, 2, gl2D.FLOAT, false, 0, 0);
+    gl2D.enableVertexAttribArray(vPosition);
 
-    canvas.addEventListener('click', function(event) {
-        var point = convertToWebGLCoords(event.clientX, event.clientY, canvas);
+    canvas2D.addEventListener("click", function(event) {
+        var point = posMouse_to_posCanvas(event.clientX, event.clientY, canvas2D);
         vertices.push(point);
     
-        // Update the buffer with the new points
-        gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
+        // Update the buffer with the new lines
+        gl2D.bindBuffer(gl2D.ARRAY_BUFFER, bufferId);
+        gl2D.bufferData(gl2D.ARRAY_BUFFER, flatten(vertices), gl2D.STATIC_DRAW);
     
-        // Redraw the scene with the new points
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.drawArrays(gl.LINES, 0, vertices.length);
+        // Redraw the scene with the new lines
+        gl2D.clear(gl2D.COLOR_BUFFER_BIT | gl2D.DEPTH_BUFFER_BIT);
+        gl2D.drawArrays(gl2D.LINES, 0, vertices.length);
     });
 }
 
 function drawPolygons() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Mouse tracking
+    canvas3D.onmousedown = function(event) {
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+    };
 
-    var vertices = [vec2(-0.5, -0.5), vec2(0, 0.5), vec2(0.5, -0.5)];
-    var colors = [vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)];
+    canvas3D.onmouseup = function(event) {
+        dragging = false;
+    };
+
+    canvas3D.onmousemove = function(event) {
+        if (!dragging) return;
+
+        var deltaX = event.clientX - lastX;
+        var deltaY = event.clientY - lastY;
+        lastX = event.clientX;
+        lastY = event.clientY;
+
+        theta[yAxis] += deltaX * 0.5;
+        theta[xAxis] += deltaY * 0.5;
+
+        renderPolygons();
+    };
+
+    // Draw polygons
+    gl3D.clear(gl3D.COLOR_BUFFER_BIT | gl3D.DEPTH_BUFFER_BIT);
+
+    var vertices = [
+        vec3(0.25, 0.25, 0.25),
+        vec3(-0.25, 0.25, 0.25),
+        vec3(-0.25, -0.25, 0.25),
+        vec3(0.25, -0.25, 0.25),
+        vec3(0.25, 0.25, -0.25),
+        vec3(-0.25, 0.25, -0.25),
+        vec3(-0.25, -0.25, -0.25),
+        vec3(0.25, -0.25, -0.25)
+    ];
+    
+    var faces = [
+        [0, 1, 2, 3],
+        [4, 7, 6, 5],
+        [0, 4, 5, 1],
+        [1, 5, 6, 2],
+        [2, 6, 7, 3],
+        [3, 7, 4, 0]
+    ];
+    
+    var colors = [
+        vec4(1.0, 0.0, 0.0, 1.0), 
+        vec4(0.0, 1.0, 0.0, 1.0),  
+        vec4(0.0, 0.0, 1.0, 1.0), 
+        vec4(1.0, 1.0, 0.0, 1.0), 
+        vec4(0.0, 1.0, 1.0, 1.0),
+        vec4(1.0, 0.0, 1.0, 1.0)
+    ];
+
+    // Creating 3D polygon (cube)
+    for(var f=0; f<faces.length; f++) {
+        var a = vertices[faces[f][0]]
+        var b = vertices[faces[f][1]]
+        var c = vertices[faces[f][2]]
+        var d = vertices[faces[f][3]]
+        var color = colors[f]
+
+        vs_vertices.push(a)
+        vs_vertices.push(b)
+        vs_vertices.push(c)
+        vs_vertices.push(c)
+        vs_vertices.push(d)
+        vs_vertices.push(a)
+
+        for(var i=0; i<6; i++) vs_colors.push(color)
+    }
 
     // Load shaders and initialize attribute buffers
-    var program = initShaders(gl, "Shaders/polygons.vert", "Shaders/polygons.frag");
-    gl.useProgram(program);
+    var program = initShaders(gl3D, "Shaders/polygons.vert", "Shaders/polygons.frag");
+    gl3D.useProgram(program);
     
     // Load the data into the GPU
-    var bufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertices), gl.STATIC_DRAW);
-
-    // Associate our shader variables with our data buffer
-    var vPosition = gl.getAttribLocation(program, "vPosition");
-    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vPosition);
-
-    // Repeat the above process for vertices color attributes
-    var cBufferId = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, cBufferId);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
-    var vColor = gl.getAttribLocation(program, "vColor");
-    gl.vertexAttribPointer(vColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(vColor);
+    var vBuffer = gl3D.createBuffer();
+    gl3D.bindBuffer(gl3D.ARRAY_BUFFER, vBuffer);
+    gl3D.bufferData(gl3D.ARRAY_BUFFER, flatten(vs_vertices), gl3D.STATIC_DRAW );    
     
-    // Rendering
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // Associate our shader variables with our data buffer
+    var vPosition = gl3D.getAttribLocation(program, "vPosition");
+    gl3D.vertexAttribPointer(vPosition, 3, gl3D.FLOAT, false, 0, 0);
+    gl3D.enableVertexAttribArray(vPosition);
+    
+    // Load the data (colors) into the GPU 
+    var cBuffer = gl3D.createBuffer();
+    gl3D.bindBuffer(gl3D.ARRAY_BUFFER, cBuffer);
+    gl3D.bufferData(gl3D.ARRAY_BUFFER, flatten(vs_colors), gl3D.STATIC_DRAW);    
+    
+    // Associate our shader variables with our data buffer
+    var vColor = gl3D.getAttribLocation(program, "vColor");
+    gl3D.vertexAttribPointer(vColor, 4, gl3D.FLOAT, false, 0, 0);
+    gl3D.enableVertexAttribArray(vColor);
+    
+    thetaLoc = gl3D.getUniformLocation(program, "theta");
+
+    renderPolygons();
+}
+
+function renderPolygons() {
+    gl3D.clear(gl3D.COLOR_BUFFER_BIT | gl3D.DEPTH_BUFFER_BIT);
+    gl3D.uniform3fv(thetaLoc, theta);
+    gl3D.drawArrays(gl3D.TRIANGLES, 0, vs_vertices.length);
+    requestAnimFrame(renderPolygons);
+}
+
+/* Gets the X and Y coordinates of the mouse and converts it to the corresponding coordinates
+of the WebGL canvas -- using this function for the 2D canvas */
+function posMouse_to_posCanvas(x, y, canvas) {
+    var rect = canvas.getBoundingClientRect();
+    var glX = (x-rect.left)/canvas.width*2 - 1;
+    var glY = (canvas.height - (y-rect.top))/canvas.height*2 - 1;
+    return vec2(glX, glY);
 }
