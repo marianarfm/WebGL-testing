@@ -3,20 +3,24 @@ var canvas3D;
 var gl2D;
 var gl3D;
 
-// For the 3D canvas
+//// Variables for the 3D canvas
 var program;
-var theta = 0;
+// Rotation
+var theta = [0, 0, 0];
 var thetaLoc;
 var xAxis = 0;
 var yAxis = 1;
 var zAxis = 2;
-var axis = 0;
-var theta = [0, 0, 0];
+// Translation
+var t = [0.0, 0.0, 0.0];
+var tLoc;
+// Mouse dragging, last X and Y position
+var dragging = false;
+var lastX;
+var lastY;
+// Vertices and colors for the 3D polygon
 var vs_vertices = []
 var vs_colors = []
-var dragging = false;
-var lastX = -1
-var lastY = -1;
 
 window.onload = function init() {
     canvas2D = document.getElementById("gl-canvas2D");
@@ -117,15 +121,22 @@ function drawPolygons() {
 
     canvas3D.onmousemove = function(event) {
         if (!dragging) return;
-
+    
         var deltaX = event.clientX - lastX;
         var deltaY = event.clientY - lastY;
         lastX = event.clientX;
         lastY = event.clientY;
-
-        theta[yAxis] += deltaX * 0.5;
-        theta[xAxis] += deltaY * 0.5;
-
+    
+        if (event.shiftKey) {
+            // Translation
+            t[0] += deltaX * 0.005;
+            t[1] -= deltaY * 0.005;
+        } else {
+            // Rotation
+            theta[yAxis] += deltaX * 0.5;
+            theta[xAxis] += deltaY * 0.5;
+        }
+    
         renderPolygons();
     };
 
@@ -204,6 +215,7 @@ function drawPolygons() {
     gl3D.enableVertexAttribArray(vColor);
     
     thetaLoc = gl3D.getUniformLocation(program, "theta");
+    tLoc = gl3D.getUniformLocation(program, "translation");
 
     renderPolygons();
 }
@@ -211,12 +223,17 @@ function drawPolygons() {
 function renderPolygons() {
     gl3D.clear(gl3D.COLOR_BUFFER_BIT | gl3D.DEPTH_BUFFER_BIT);
     gl3D.uniform3fv(thetaLoc, theta);
+    gl3D.uniform3fv(tLoc, t);
     gl3D.drawArrays(gl3D.TRIANGLES, 0, vs_vertices.length);
     requestAnimFrame(renderPolygons);
 }
 
-/* Gets the X and Y coordinates of the mouse and converts it to the corresponding coordinates
-of the WebGL canvas -- using this function for the 2D canvas */
+/* Gets the X and Y coordinates of the mouse and converts it
+   to the corresponding coordinates of the WebGL canvas.
+   
+   The mouse event provides coordinates in the screen space 
+   (pixels relative to the top-left corner of the canvas) but
+   WebGL uses normalized coordinates from -1 to 1 */
 function posMouse_to_posCanvas(x, y, canvas) {
     var rect = canvas.getBoundingClientRect();
     var glX = (x-rect.left)/canvas.width*2 - 1;
