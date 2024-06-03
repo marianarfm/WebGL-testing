@@ -2,6 +2,7 @@ attribute vec4 vPosition;
 attribute vec4 vColor;
 varying vec4 fColor;
 uniform vec3 theta;
+uniform vec3 translation;
 
 void main() {
     // Rotation around the X,Y and Z axis
@@ -21,6 +22,14 @@ void main() {
                   0, 0, 1, 0,
                   0, 0, 0, 1);
     
+    mat4 R = Rx*Ry*Rz;
+    
+    // Translation
+    mat4 T = mat4(1.0, 0.0, 0.0, 0.0,
+                  0.0, 1.0, 0.0, 0.0,
+                  0.0, 0.0, 1.0, 0.0,
+                  translation.x, translation.y, translation.z, 1.0);
+    
     fColor = vColor;
-    gl_Position = Rx * Ry * Rz * vPosition;
+    gl_Position = T*R*vPosition;
 }
