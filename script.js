@@ -6,11 +6,8 @@ var gl3D;
 //// Variables for the 3D canvas
 var program;
 // Rotation
-var theta = [0, 0, 0];
+var theta = [0.0, 0.0, 0.0];
 var thetaLoc;
-var xAxis = 0;
-var yAxis = 1;
-var zAxis = 2;
 // Translation
 var t = [0.0, 0.0, 0.0];
 var tLoc;
@@ -61,8 +58,8 @@ function drawPoints() {
     gl2D.enableVertexAttribArray(vPosition);
 
     canvas2D.addEventListener("click", function(event) {
-        var point = posMouse_to_posCanvas(event.clientX, event.clientY, canvas2D);
-        vertices.push(point);
+        var line = posMouse_to_posCanvas(event.clientX, event.clientY, canvas2D);
+        vertices.push(line);
     
         // Update the buffer with the new points
         gl2D.bindBuffer(gl2D.ARRAY_BUFFER, bufferId);
@@ -133,8 +130,8 @@ function drawPolygons() {
             t[1] -= deltaY * 0.005;
         } else {
             // Rotation
-            theta[yAxis] += deltaX * 0.5;
-            theta[xAxis] += deltaY * 0.5;
+            theta[1] += deltaX * 0.5;
+            theta[0] += deltaY * 0.5;
         }
     
         renderPolygons();
